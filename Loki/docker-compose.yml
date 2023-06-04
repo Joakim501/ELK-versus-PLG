@@ -1,0 +1,70 @@
+version: '3.7'
+
+services:
+  loki:
+    image: grafana/loki:2.7.4
+    container_name: loki
+    ports:
+      - 3100:3100
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - plg
+
+  grafana:
+    image: grafana/grafana:9.4.7
+    container_name: grafana
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    entrypoint:
+      - sh
+      - -euc
+      - |
+        mkdir -p /etc/grafana/provisioning/datasources
+        cat <<EOF > /etc/grafana/provisioning/datasources/ds.yaml
+        apiVersion: 1
+        datasources:
+        - name: Loki
+          type: loki
+          access: proxy 
+          orgId: 1
+          url: http://loki:3100
+          basicAuth: false
+          isDefault: true
+          version: 1
+          editable: false
+          jsonData:
+            timeout: "300"      
+        EOF
+        /run.sh
+    ports:
+      - 3000:3000
+    networks:
+      - plg
+
+  promtail:
+    image: grafana/promtail:2.7.4
+    container_name: promtail 
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
+      - ../logs:/var/logs
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - plg
+
+  #prometheus:
+  #  image: prom/prometheus
+  #  container_name: prometheus
+  #  ports:
+  #    - 9090:9090
+  #  volumes:
+  #    - ./prometheus.yml:/etc/prometheus/prometheus.yml
+  #  networks:
+  #    - plg
+
+networks:
+  plg:
+    driver: bridge

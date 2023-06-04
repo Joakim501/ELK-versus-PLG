@@ -1,0 +1,57 @@
+server:
+    http_listen_port: 9080
+    grpc_listen_port: 0
+
+positions:
+    filename: /tmp/positions.yaml
+
+clients:
+    - url: http://loki:3100/loki/api/v1/push
+      #tenant_id: tenant1
+
+scrape_configs:
+    - job_name: scrape_flog
+      static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: flog
+          __path__: /var/logs/flog/*
+      #pipeline_stages:
+        #- regex:
+            #expression: '(?P<ip>[\d.]+) (?P<userid>\S+) (?P<username>\S+) \[(?P<timestamp>[\w:/]+\s[+-]\d{4})\] \"(?P<method>\w+) (?P<path>\S+) (?P<protocol>.+?)\" (?P<status>\d{3}) (?P<bytes>\d+)'
+        #- labels:
+            #method:
+            #status:
+            #path:
+            #protocol:
+            #username:
+            #bytes:
+        #- timestamp:
+            #source: timestamp
+            #format: 02/Jan/2006:15:04:05 -0700
+            #location: "Europe/Stockholm"
+
+    - job_name: scrape_lps
+      static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: lps
+          __path__: /var/logs/lps/*
+
+      pipeline_stages:
+        - regex:
+            #expression: '(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{6})?), MarkersValid: (?P<markers_valid>\w+).*NoOfMarkers: (?P<no_of_markers>\d+)'
+            #expression: 'T:(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{6})?), MarkersValid: (?P<markers_valid>\w+), TrolleyPos:(?P<trolley_pos>.*), Hoistpos:(?P<hoist_pos>.*), TrSpd:(?P<tr_spd>.*), GaSpd:(?P<ga_spd>.*), MhSpd:(?P<mh_spd>.*), NoOfMarkers:(?P<no_of_markers> \d)'
+            expression: 'T:(?P<time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{6})?), MarkersValid: (?P<markers_valid>\w+)'
+            
+        - labels:
+            markers_valid:
+        
+        - timestamp:
+            source: time
+            format: 2006-01-02 15:04:05.000000
+            fallback_formats: [2006-01-02 15:04:05]
+            location: "Europe/Stockholm"
+   

@@ -1,0 +1,60 @@
+version: '3.7'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    container_name: elasticsearch
+    environment:
+      node.name: es-node
+      #ES_JAVA_OPTS: -Xms512m -Xmx512m
+      discovery.type: single-node
+      xpack.security.enabled: true
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - elk
+    restart: unless-stopped
+  
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    container_name: kibana
+    ports:
+      - 5601:5601
+    networks:
+      - elk
+    restart: unless-stopped
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.6.2
+    container_name: logstash
+    ports:
+      - 9600:9600
+    #environment:
+      #LS_JAVA_OPTS: -Xms256m -Xmx256m
+      #monitoring.enabled: false
+    volumes:
+      - ../logs:/usr/share/logstash/logs
+      - ./logstash-pipeline:/usr/share/logstash/pipeline
+    networks:
+      - elk
+    restart: unless-stopped
+
+  #metricbeat:
+  #  image: docker.elastic.co/beats/metricbeat:8.6.2
+  #  container_name: metricbeat
+  #  user: root
+  #  command:
+  #    - -strict.perms=false
+  #  volumes:
+  #    - ./metricbeat.yml:/usr/share/metricbeat/metricbeat.yml
+  #  environment:
+  #    - setup.kibana.host=kibana:5601
+  #    - output.elasticsearch.hosts=["elasticsearch:9200"]
+  #  networks:
+  #    - elk
+  #  restart: unless-stopped
+
+networks:
+  elk:
+    driver: bridge
